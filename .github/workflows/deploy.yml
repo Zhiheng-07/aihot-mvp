@@ -1,0 +1,18 @@
+name: 推送触发 Render 部署
+
+# 服务由公开仓库 URL 创建（未装 GitHub App），Render 收不到 push webhook，
+# 由本 workflow 代为触发部署。
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 触发 Render 部署
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" -d '{}' \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys"

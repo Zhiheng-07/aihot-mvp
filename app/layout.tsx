@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="zh-CN">
       <body>
         <header className="sticky top-0 z-10 border-b border-neutral-200 bg-white/90 backdrop-blur">
-          <div className="mx-auto flex h-14 max-w-5xl items-center gap-6 px-4">
+          <div className="mx-auto flex h-16 max-w-5xl items-center gap-6 px-4">
             <Link href="/" className="shrink-0">
               <Logo />
             </Link>
