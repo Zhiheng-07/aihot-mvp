@@ -1,0 +1,23 @@
+# Render 部署蓝图：dashboard.render.com → New → Blueprint → 选本仓库即可
+services:
+  - type: web
+    name: aihot-mvp
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npx next start -p $PORT
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL # Neon pooler 连接串
+        sync: false
+      - key: DIRECT_DATABASE_URL # Neon 直连串（migrate 用）
+        sync: false
+      - key: LLM_BASE_URL
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        sync: false
+      - key: SITE_URL # 部署后填 https://aihot-mvp.onrender.com
+        sync: false
