@@ -1,0 +1,37 @@
+name: 定时抓取与日报
+
+on:
+  schedule:
+    - cron: "15 */2 * * *" # 每 2 小时抓取 + LLM 加工
+    - cron: "10 0 * * *" # 每天 UTC 00:10（北京 8:10）生成日报
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "手动执行哪个任务"
+        type: choice
+        options: [ingest, daily, both]
+        default: both
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+      LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_MODEL: ${{ secrets.LLM_MODEL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 抓取 + LLM 加工
+        if: github.event_name != 'schedule' && inputs.job != 'daily' || github.event.schedule == '15 */2 * * *'
+        run: npx tsx scripts/ingest.ts
+      - name: 生成日报
+        if: github.event_name != 'schedule' && inputs.job != 'ingest' || github.event.schedule == '10 0 * * *'
+        run: npx tsx scripts/gen-daily.ts

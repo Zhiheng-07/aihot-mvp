@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL") // Neon：migrate 用直连串，运行时用 pooler 串
+}
+
+// 信源配置：存 DB，可随时增删
+model Source {
+  id            String    @id @default(cuid())
+  name          String // 展示名，如 "OpenAI Blog"
+  type          String // rss | github | hf-papers
+  url           String // feed 地址 / repo 全名（owner/repo）/ API 标识
+  categoryHint  String? // 该源的默认分类倾向：model | product | industry | paper | tip
+  enabled       Boolean   @default(true)
+  lastFetchedAt DateTime?
+  createdAt     DateTime  @default(now())
+  items         Item[]
+
+  @@unique([type, url])
+}
+
+// 内容条目：抓取入库后由 LLM 补齐加工字段
+model Item {
+  id          String    @id @default(cuid())
+  sourceId    String
+  source      Source    @relation(fields: [sourceId], references: [id])
+  title       String // 中文标题（LLM 译，加工前 = 原文标题）
+  titleEn     String? // 原文标题
+  url         String    @unique // 原文链接，去重键
+  imageUrl    String?
+  rawExcerpt  String? // 抓取的原始摘要/正文节选
+  summary     String? // LLM 中文摘要
+  category    String? // model | product | industry | paper | tip
+  score       Int? // 0-100 精选分
+  selected    Boolean   @default(false) // score >= 70
+  tags        String? // JSON 数组字符串
+  eventKey    String? // LLM 生成的事件归一键，同事件多信源聚合用
+  publishedAt DateTime
+  processedAt DateTime? // null = 待 LLM 加工
+  createdAt   DateTime  @default(now())
+
+  @@index([publishedAt, id]) // 游标分页
+  @@index([eventKey])
+  @@index([selected, publishedAt])
+}
+
+// 日报：每日定时快照（北京时间日切割）
+model Daily {
+  id        String   @id @default(cuid())
+  date      String   @unique // "2026-07-02"
+  intro     String? // LLM 写的当日导语
+  itemIds   String // JSON：{ category: [itemId, ...], ... }
+  createdAt DateTime @default(now())
+}
