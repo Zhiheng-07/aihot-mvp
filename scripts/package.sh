@@ -62,50 +62,9 @@ cp "$PROJECT_DIR/prisma/dev.db" "$RES/server/prisma/dev.db"
 sed -i '' "s|^SITE_URL=.*|SITE_URL=\"http://localhost:$PORT\"|" "$RES/server/.env"
 echo "registry=$NPM_REGISTRY" > "$RES/server/.npmrc"
 
-# ── 4. 生成应用图标（橙底白字 AI，纯 stdlib 生成 PNG → icns）──
+# ── 4. 应用图标（明树数据树形标，预渲染 PNG 见 public/brand/icon-1024.png）──
 echo "==> 生成图标"
-python3 - "$DIST/icon-master.png" <<'PYEOF'
-import struct, zlib, sys
-
-S = 1024
-CELL = 64
-# 12x9 点阵："AI" 字样
-GRID = [
-    "............",
-    ".###....###.",
-    "#...#....#..",
-    "#...#....#..",
-    "#####....#..",
-    "#...#....#..",
-    "#...#....#..",
-    "#...#...###.",
-    "............",
-]
-BG = (234, 88, 12)   # orange-600
-FG = (255, 255, 255)
-
-ox = (S - len(GRID[0]) * CELL) // 2
-oy = (S - len(GRID) * CELL) // 2
-
-rows = []
-for y in range(S):
-    row = bytearray([0])
-    for x in range(S):
-        gy, gx = (y - oy) // CELL, (x - ox) // CELL
-        on = 0 <= gy < len(GRID) and 0 <= gx < len(GRID[0]) and GRID[gy][gx] == "#"
-        row += bytes(FG if on else BG)
-    rows.append(bytes(row))
-
-raw = zlib.compress(b"".join(rows), 9)
-def chunk(tag, data):
-    return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data))
-
-png = (b"\x89PNG\r\n\x1a\n"
-       + chunk(b"IHDR", struct.pack(">IIBBBBB", S, S, 8, 2, 0, 0, 0))
-       + chunk(b"IDAT", raw)
-       + chunk(b"IEND", b""))
-open(sys.argv[1], "wb").write(png)
-PYEOF
+cp "$PROJECT_DIR/public/brand/icon-1024.png" "$DIST/icon-master.png"
 
 ICONSET="$DIST/AppIcon.iconset"
 rm -rf "$ICONSET" && mkdir -p "$ICONSET"
